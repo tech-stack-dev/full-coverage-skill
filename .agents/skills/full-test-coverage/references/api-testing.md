@@ -77,6 +77,10 @@ Follow this exact sequence. Do not skip or reorder steps.
 **Step 1 — Read backend source code**
 Read: route handlers (HTTP methods, auth guards), DTOs/Zod schemas (to understand contract — then define independent test-owned interfaces), service logic (business rules, error conditions), error definitions, DB schema.
 
+While reading route handlers, explicitly identify every 400 source:
+- Zod `.parse()` / `.safeParse()` failure → `VALIDATION_ERROR` → use `expect400ValidationError`
+- `Errors.badRequest()` manual guard → `BAD_REQUEST` → use `expect400BadRequest`
+
 **Step 2 — Verify response helpers**
 For every error code the module can return, confirm a corresponding helper exists in `tests-api/helpers/response.helper.ts`. Create missing helpers before proceeding.
 
@@ -280,6 +284,17 @@ export function expect400ValidationError(
         expect.objectContaining({ path: expectedField }),
       ])
     );
+  }
+}
+
+export function expect400BadRequest(
+  response: ApiResponse,
+  expectedMessage?: string
+): void {
+  expect(response.status).toBe(400);
+  expect(response.data.code).toBe("BAD_REQUEST");
+  if (expectedMessage) {
+    expect(response.data.error).toContain(expectedMessage);
   }
 }
 
@@ -530,7 +545,7 @@ For each endpoint, generate tests covering:
 - [ ] 401 when unauthenticated
 - [ ] 403 when accessing another organization's resource
 - [ ] 404 for non-existent resource ID (parameterized endpoints only)
-- [ ] **Exactly one 400** — pick simplest Zod case (e.g., missing required field). Do NOT add tests for max length, empty strings, or other field constraints
+- [ ] **Exactly one 400** — read the route to identify the error source: Zod validation → `expect400ValidationError`; `Errors.badRequest()` → `expect400BadRequest`. Do NOT add tests for max length, empty strings, or other field constraints
 - [ ] Write verification: POST→GET, PATCH→GET, DELETE→GET(404)
 - [ ] Third-party integration point (if applicable)
 
@@ -553,6 +568,7 @@ If count exceeds range, write an inline justification comment per extra scenario
 | Mistake | Rule |
 |---------|------|
 | Multiple 400 tests per endpoint | One 400 per endpoint. All other field constraints belong in unit tests |
+| Using `expect400ValidationError` for `Errors.badRequest()` | Read the route in Step 1. Zod failure → `VALIDATION_ERROR`; manual `Errors.badRequest()` guard → `BAD_REQUEST`. They are distinct — wrong helper = wrong assertion |
 | Non-unique test data | Always use `counter + timestamp + random` in factories |
 | Generated value exceeds field max | Read Zod schema `.max()` before writing factory |
 | Inline cleanup | Cleanup MUST run in `test.afterEach` only — never inside `test()` |
