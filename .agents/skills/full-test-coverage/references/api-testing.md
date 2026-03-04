@@ -61,6 +61,7 @@ tests-api/
 |------|---------|---------|
 | Test file | `<method>-<endpoint>.spec.ts` | `post-notes.spec.ts` |
 | Parameterized test file | `<method>-<resource>-<param>.spec.ts` | `get-notes-id.spec.ts` |
+| Action/custom endpoint | `<method>-<resource>-<param>-<action>.spec.ts` | `post-notes-id-publish.spec.ts` |
 | Describe string (flat) | `"<METHOD> /api/<resource>"` | `"GET /api/notes"` |
 | Describe string (parameterized) | `"<METHOD> /api/<resource>/[<param>]"` | `"GET /api/notes/[id]"` |
 | API utility function | `execute<Method><Resource>Request` | `executeGetNotesRequest` |
