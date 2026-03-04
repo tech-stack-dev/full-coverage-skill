@@ -5,7 +5,7 @@ A Claude Code skill that generates complete, pyramid-shaped test suites for any 
 ## Install
 
 ```bash
-npx skills add tech-stack-dev/full-test-coverage-skill
+npx skills add tech-stack-dev/full-test-coverage
 ```
 
 ## What it does
