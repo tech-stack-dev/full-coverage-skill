@@ -45,32 +45,16 @@ Each concern is owned by exactly one layer. Do not duplicate responsibilities.
 
 Before selecting layers or writing any tests, read the target code.
 
-**First, discover the full scope using three complementary passes.**
+**First, discover the full scope. Use the Explore agent** (subagent_type=Explore, thoroughness="very thorough") with the following prompt:
 
-**Pass 1 — Filename and directory search.**
-Extract the domain keyword from the user's request and search across the entire repository for:
-- Files whose name contains the keyword (e.g. `audio-generation.ts`, `audioGeneration.service.ts`)
-- Directories whose name contains the keyword (e.g. `audio-generation/index.ts`, `audio-generation/handler.ts`)
+> "Find all source files related to [domain keyword] in this repository. Search comprehensively:
+> - Files and directories whose name contains the keyword in any case variant (kebab-case, camelCase, snake_case)
+> - Files anywhere in the repo whose content references the domain — route registrations, class names, import paths
+> - HTTP route handlers, service classes, Zod schemas/DTOs, utility modules, serverless/Lambda handlers, shared infrastructure
+> - Follow import chains from every file found to include referenced schemas, services, clients, and error definitions
+> Do not restrict the search to src/ or any assumed directory. Return a complete list of files with a one-line description of each."
 
-Search all case variants: kebab-case, camelCase, snake_case (e.g. `audio-generation`, `audioGeneration`, `audio_generation`). Do not restrict the search to `src/` or any assumed subdirectory.
-
-**Pass 2 — Content search.**
-Grep the full repository source for the keyword. This finds files that reference the domain but have generic names — route registrations (`'/audio'`), class imports (`AudioGenerationService`), handler wrappers (`handler.ts` that calls a domain service). Include any file whose content meaningfully references the domain.
-
-**Pass 3 — Import expansion.**
-For every file found in Passes 1 and 2, read its imports. Add all referenced service files, schemas, DTOs, utilities, clients, and error definitions to the scope — regardless of where they live.
-
-This three-pass approach surfaces files in any location: `functions/`, `lambdas/`, `handlers/`, monorepo packages, flat structures, or non-standard directories.
-
-Then broaden by file role. For each type below, include any repo-wide match that belongs to the domain:
-- HTTP route handlers (any file that registers or handles HTTP methods)
-- Service classes and business logic modules
-- Zod schemas and DTOs
-- Utility and helper modules
-- Serverless / background function handlers
-- Shared infrastructure (error handling, clients, middleware)
-
-The files discovered across all passes — plus their direct imports — define the scope. Do not skip files that don't match an expected naming pattern.
+Use the returned file list as the scope for all subsequent steps.
 
 Then read:
 - Zod schemas / DTOs
