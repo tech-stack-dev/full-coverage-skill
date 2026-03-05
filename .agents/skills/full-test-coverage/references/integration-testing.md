@@ -33,6 +33,19 @@ Integration tests verify complete code paths: handler → service → database �
 
 **Tech stack:** Vitest · Prisma (direct DB) · Axios (HTTP client) · Chance.js (data generation) · Wiremock (external service mocking) · Docker (test environment)
 
+**vi.mock scope — process boundary rule:**
+
+Handler tests make real HTTP calls to the app server, which runs in a **separate process**. `vi.mock` only intercepts modules in the Vitest process — it has no effect on the server.
+
+| Test type | Runs in | vi.mock works? | External service strategy |
+|-----------|---------|---------------|--------------------------|
+| Service test (direct call) | Vitest process | ✓ Yes | `vi.mock` |
+| Handler test (HTTP call) | Server process | ✗ No | Wiremock |
+
+Practical consequence for coverage:
+- **Error paths that exit before the external call** (401, 400, 403, 404) → handler test ✓
+- **Success paths that require the external call to complete** → service test with `vi.mock` ✓, not handler test
+
 **Directory structure:**
 ```
 src/modules/<domain>/__tests__/integration/
@@ -103,6 +116,10 @@ Record before Step 2:
 - 3e: Wiremock stubs for external services
 
 **Step 4 — Write handler tests** — complete Step 4a (scenario list as comments) before Step 4b (implementation).
+
+Before writing, classify each scenario by whether it requires an external service call to succeed:
+- Scenarios that **fail before** the external call (auth errors, validation, not found, forbidden) → handler test
+- Scenarios where **success requires** the external call (e.g. signed URL returned, payment charged) → service test with `vi.mock` instead — do not write a handler test for these
 
 **Step 5 — Write service layer tests** — direct service method calls, fresh `userId`/`organizationId` via `DatabaseHelper` in `beforeEach`.
 
@@ -499,6 +516,7 @@ await prisma.note.create({ data: { ...data, createdAt: new Date("2024-01-01T00:0
 | Untested service branches | Every if/else, switch, ternary must have both positive and negative tests |
 | No DB assertion after write | Always query Prisma after POST/PATCH/DELETE |
 | Real external API calls | Always mock via Wiremock or vi.mock |
+| vi.mock in handler test for external-service success | vi.mock is scoped to the Vitest process — the app server runs separately, vi.mock has no effect there. Test success paths that require an external call in service tests (in-process) instead |
 | Shared context in handler tests | Call `createContext()` inside each `it()`, never in `beforeEach` |
 | Global `deleteMany({})` without `where` | Always scope deletes to tracked user/org IDs via `DatabaseHelper.cleanup()` |
 | Missing `afterEach` cleanup | Always call `DatabaseHelper.cleanup()` with tracked IDs |
@@ -526,6 +544,7 @@ await prisma.note.create({ data: { ...data, createdAt: new Date("2024-01-01T00:0
 - [ ] Each handler `it()` calls `createContext()` independently (service tests may use `beforeEach`)
 - [ ] All `prisma.*.count()` and `prisma.*.findMany()` scoped by `organizationId` or `userId`
 - [ ] All external services mocked — no real API calls
+- [ ] Handler tests do not test success paths that require an external service call — those are in service tests with vi.mock
 - [ ] Every write operation includes a direct Prisma query assertion
 - [ ] No `expect.anything()`, no snapshot tests
 
