@@ -45,13 +45,23 @@ Each concern is owned by exactly one layer. Do not duplicate responsibilities.
 
 Before selecting layers or writing any tests, read the target code.
 
-Read these files:
-- Zod schemas / DTOs (`<domain>.dto.ts`)
-- Service class (`<domain>.service.ts`)
-- Route handlers (`app/api/<path>/route.ts`)
-- Utility functions (`<domain>.utils.ts`)
+**First, discover the full scope.** Do not assume a specific directory structure or file naming convention. Scan the codebase to find all source files relevant to the domain being analyzed. Look for:
+- HTTP route handlers (any file that registers or handles HTTP methods)
+- Service classes and business logic modules
+- Zod schemas and DTOs
+- Utility and helper modules
+- Serverless / background function handlers
+- Shared infrastructure (error handling, clients, middleware)
+
+Include every file with exported functions, classes, or schemas that belongs to the domain. The scan result defines the scope — do not skip files that don't match an expected naming pattern.
+
+Then read:
+- Zod schemas / DTOs
+- Service classes (regardless of naming prefix)
+- Route and request handlers
+- Utility and shared modules
 - DB schema (`prisma/schema.prisma`)
-- Error definitions (`src/lib/server/errors.ts`)
+- Error definitions
 - External service clients (if any)
 - UI components / pages (if any — look for `data-testid` attributes)
 
